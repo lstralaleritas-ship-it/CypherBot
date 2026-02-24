@@ -9,7 +9,21 @@ const {
   ButtonStyle,
   PermissionsBitField
 } = require('discord.js');
+const express = require('express');
 
+// --- Servidor Express para mantener Railway activo ---
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+app.get('/', (req, res) => {
+  res.send('✅ Bot CypherHub Tickets está corriendo');
+});
+
+app.listen(PORT, () => {
+  console.log(`🌐 Página web activa en puerto ${PORT}`);
+});
+
+// --- Cliente de Discord ---
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
