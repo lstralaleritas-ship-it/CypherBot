@@ -11,6 +11,14 @@ const {
 } = require('discord.js');
 const express = require('express');
 
+// --- Manejo global de errores ---
+process.on('unhandledRejection', (error) => {
+  console.error('❌ Unhandled promise rejection:', error);
+});
+process.on('uncaughtException', (error) => {
+  console.error('❌ Uncaught exception:', error);
+});
+
 // --- Servidor Express para mantener Railway activo ---
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -68,53 +76,62 @@ client.on('interactionCreate', async (interaction) => {
 
   // Crear ticket según selección
   if (interaction.isStringSelectMenu() && interaction.customId === 'ticket_menu') {
-    const tipo = interaction.values[0];
-    const guild = interaction.guild;
-    const nombre = `${tipo}-ticket-${interaction.user.username}`;
+    try {
+      const tipo = interaction.values[0];
+      const guild = interaction.guild;
+      const nombre = `${tipo}-ticket-${interaction.user.username}`;
 
-    // Buscar categoría
-    const categoria = guild.channels.cache.find(c => c.type === 4 && c.name.toLowerCase().includes(tipo));
-    if (!categoria) return interaction.reply({ content: `❌ No encontré la categoría "${tipo}"`, ephemeral: true });
+      // Buscar categoría
+      const categoria = guild.channels.cache.find(c => c.type === 4 && c.name.toLowerCase().includes(tipo));
+      if (!categoria) return interaction.reply({ content: `❌ No encontré la categoría "${tipo}"`, ephemeral: true });
 
-    const canal = await guild.channels.create({
-      name: nombre,
-      type: 0,
-      parent: categoria.id,
-      permissionOverwrites: [
-        { id: guild.roles.everyone, deny: ['ViewChannel'] },
-        { id: interaction.user.id, allow: ['ViewChannel', 'SendMessages'] }
-      ]
-    });
+      const canal = await guild.channels.create({
+        name: nombre,
+        type: 0,
+        parent: categoria.id,
+        permissionOverwrites: [
+          { id: guild.roles.everyone, deny: ['ViewChannel'] },
+          { id: interaction.user.id, allow: ['ViewChannel', 'SendMessages'] }
+        ]
+      });
 
-    const embedTicket = new EmbedBuilder()
-      .setTitle(`🎫 Ticket de ${tipo}`)
-      .setDescription(
-        `Gracias por abrir un ticket de **${tipo}**.\n\n` +
-        `Por favor, espera pacientemente a que el equipo de soporte atienda tu solicitud.\n\n` +
-        `🔔 Mientras tanto, describe tu problema o consulta con el mayor detalle posible.\n\n` +
-        `⚡ Nuestro equipo hará lo posible por responderte lo antes posible.`
-      )
-      .setColor('#2ECC71')
-      .setFooter({ text: 'CypherHub Tickets' });
+      const embedTicket = new EmbedBuilder()
+        .setTitle(`🎫 Ticket de ${tipo}`)
+        .setDescription(
+          `Gracias por abrir un ticket de **${tipo}**.\n\n` +
+          `Por favor, espera pacientemente a que el equipo de soporte atienda tu solicitud.\n\n` +
+          `🔔 Mientras tanto, describe tu problema o consulta con el mayor detalle posible.\n\n` +
+          `⚡ Nuestro equipo hará lo posible por responderte lo antes posible.`
+        )
+        .setColor('#2ECC71')
+        .setFooter({ text: 'CypherHub Tickets' });
 
-    const botones = new ActionRowBuilder().addComponents(
-      new ButtonBuilder()
-        .setCustomId('close_ticket')
-        .setLabel('Cerrar Ticket')
-        .setStyle(ButtonStyle.Danger),
-      new ButtonBuilder()
-        .setCustomId('claim_ticket')
-        .setLabel('Reclamar Ticket')
-        .setStyle(ButtonStyle.Success)
-    );
+      const botones = new ActionRowBuilder().addComponents(
+        new ButtonBuilder()
+          .setCustomId('close_ticket')
+          .setLabel('Cerrar Ticket')
+          .setStyle(ButtonStyle.Danger),
+        new ButtonBuilder()
+          .setCustomId('claim_ticket')
+          .setLabel('Reclamar Ticket')
+          .setStyle(ButtonStyle.Success)
+      );
 
-    await canal.send({ content: `${interaction.user}`, embeds: [embedTicket], components: [botones] });
-    await interaction.reply({ content: `✅ Ticket creado: ${canal}`, ephemeral: true });
+      await canal.send({ content: `${interaction.user}`, embeds: [embedTicket], components: [botones] });
+      await interaction.reply({ content: `✅ Ticket creado: ${canal}`, ephemeral: true });
+    } catch (error) {
+      console.error('❌ Error creando ticket:', error);
+      await interaction.reply({ content: '❌ Hubo un error al crear el ticket.', ephemeral: true });
+    }
   }
 
   // Botón cerrar ticket
   if (interaction.isButton() && interaction.customId === 'close_ticket') {
-    await interaction.channel.delete();
+    try {
+      await interaction.channel.delete();
+    } catch (error) {
+      console.error('❌ Error cerrando ticket:', error);
+    }
   }
 
   // Botón reclamar ticket
