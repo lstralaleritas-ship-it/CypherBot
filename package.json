@@ -1,0 +1,15 @@
+{
+  "name": "cypherhub-tickets",
+  "version": "1.0.0",
+  "description": "Bot de Discord para gestión de tickets con panel y botones",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "deploy": "node deploy-commands.js"
+  },
+  "author": "Tralalero",
+  "license": "MIT",
+  "dependencies": {
+    "discord.js": "^14.15.3"
+  }
+}
