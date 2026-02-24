@@ -13,12 +13,15 @@ const rest = new REST({ version: '10' }).setToken(process.env.TOKEN);
 
 (async () => {
   try {
-    console.log('🔄 Registrando comandos...');
+    console.log('🔄 Registrando comandos en el servidor...');
     await rest.put(
-      Routes.applicationCommands(process.env.CLIENT_ID), // CLIENT_ID también viene de Railway
+      Routes.applicationGuildCommands(
+        process.env.CLIENT_ID,      // ID de la aplicación
+        process.env.GUILD_ID        // ID de tu servidor (guild)
+      ),
       { body: commands }
     );
-    console.log('✅ Comandos registrados correctamente.');
+    console.log('✅ Comando /ticketsmenu registrado en tu servidor.');
   } catch (error) {
     console.error(error);
   }
