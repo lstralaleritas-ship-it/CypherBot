@@ -19,25 +19,15 @@ process.on('uncaughtException', (error) => {
   console.error('❌ Uncaught exception:', error);
 });
 
-// --- Servidor Express para mantener Railway activo ---
+// --- Servidor Express para Railway ---
 const app = express();
 const PORT = process.env.PORT || 3000;
-
-app.get('/', (req, res) => {
-  res.send('✅ Bot CypherHub Tickets está corriendo');
-});
-
-app.listen(PORT, () => {
-  console.log(`🌐 Página web activa en puerto ${PORT}`);
-});
+app.get('/', (req, res) => res.send('✅ Bot CypherHub Tickets está corriendo'));
+app.listen(PORT, () => console.log(`🌐 Página web activa en puerto ${PORT}`));
 
 // --- Cliente de Discord ---
 const client = new Client({
-  intents: [
-    GatewayIntentBits.Guilds,
-    GatewayIntentBits.GuildMessages,
-    GatewayIntentBits.MessageContent
-  ],
+  intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent],
   partials: [Partials.Channel]
 });
 
@@ -55,19 +45,26 @@ client.on('interactionCreate', async (interaction) => {
     }
 
     const embed = new EmbedBuilder()
-      .setTitle('🎫 Panel de Tickets')
-      .setDescription('Selecciona el tipo de ticket que deseas abrir:')
-      .setColor('#5865F2')
-      .setFooter({ text: 'CypherHub Tickets' });
+      .setTitle('🎫 Panel de Tickets - CypherHub')
+      .setDescription(
+        'Bienvenido al sistema de soporte de **CypherHub**.\n\n' +
+        'Aquí puedes abrir un ticket según tu necesidad:\n\n' +
+        '🛠️ **Soporte** → Para problemas técnicos, dudas sobre bots o asistencia en configuraciones.\n\n' +
+        '⚠️ **Reporte** → Para informar errores, abusos o situaciones que requieran atención del staff.\n\n' +
+        '❓ **Ayuda** → Para consultas generales, orientación o preguntas sobre la comunidad.\n\n' +
+        'Selecciona la opción adecuada y se abrirá un canal privado para atender tu solicitud.'
+      )
+      .setColor('#9B59B6') // Morado
+      .setFooter({ text: 'CypherHub Tickets - Tu soporte confiable' });
 
     const menu = new ActionRowBuilder().addComponents(
       new StringSelectMenuBuilder()
         .setCustomId('ticket_menu')
-        .setPlaceholder('Selecciona una opción...')
+        .setPlaceholder('Selecciona una categoría...')
         .addOptions([
-          { label: 'Soporte', value: 'soporte', emoji: '🛠️' },
-          { label: 'Reporte', value: 'reporte', emoji: '⚠️' },
-          { label: 'Ayuda', value: 'ayuda', emoji: '❓' }
+          { label: 'Soporte', value: 'soporte', emoji: '🛠️', description: 'Asistencia técnica y dudas sobre bots' },
+          { label: 'Reporte', value: 'reporte', emoji: '⚠️', description: 'Informar errores o abusos' },
+          { label: 'Ayuda', value: 'ayuda', emoji: '❓', description: 'Consultas generales y orientación' }
         ])
     );
 
@@ -81,9 +78,10 @@ client.on('interactionCreate', async (interaction) => {
       const guild = interaction.guild;
       const nombre = `${tipo}-ticket-${interaction.user.username}`;
 
-      // Buscar categoría
+      await interaction.deferReply({ ephemeral: true }); // evita timeout
+
       const categoria = guild.channels.cache.find(c => c.type === 4 && c.name.toLowerCase().includes(tipo));
-      if (!categoria) return interaction.reply({ content: `❌ No encontré la categoría "${tipo}"`, ephemeral: true });
+      if (!categoria) return interaction.editReply({ content: `❌ No encontré la categoría "${tipo}"` });
 
       const canal = await guild.channels.create({
         name: nombre,
@@ -95,33 +93,31 @@ client.on('interactionCreate', async (interaction) => {
         ]
       });
 
+      await interaction.editReply({ content: `✅ Ticket creado: ${canal}` });
+
       const embedTicket = new EmbedBuilder()
-        .setTitle(`🎫 Ticket de ${tipo}`)
+        .setTitle(`🎫 Ticket de ${tipo} - CypherHub`)
         .setDescription(
-          `Gracias por abrir un ticket de **${tipo}**.\n\n` +
-          `Por favor, espera pacientemente a que el equipo de soporte atienda tu solicitud.\n\n` +
-          `🔔 Mientras tanto, describe tu problema o consulta con el mayor detalle posible.\n\n` +
-          `⚡ Nuestro equipo hará lo posible por responderte lo antes posible.`
+          `Has abierto un ticket de **${tipo}**.\n\n` +
+          (tipo === 'soporte'
+            ? '🛠️ Nuestro equipo técnico revisará tu problema y te dará asistencia personalizada.'
+            : tipo === 'reporte'
+            ? '⚠️ Gracias por tu reporte. El staff analizará la situación y tomará medidas.'
+            : '❓ Aquí puedes plantear tus dudas o pedir orientación. El equipo de CypherHub te responderá pronto.') +
+          '\n\n🔔 Describe tu caso con detalle para que podamos ayudarte mejor.'
         )
-        .setColor('#2ECC71')
-        .setFooter({ text: 'CypherHub Tickets' });
+        .setColor('#9B59B6')
+        .setFooter({ text: 'CypherHub Tickets - Tu soporte confiable' });
 
       const botones = new ActionRowBuilder().addComponents(
-        new ButtonBuilder()
-          .setCustomId('close_ticket')
-          .setLabel('Cerrar Ticket')
-          .setStyle(ButtonStyle.Danger),
-        new ButtonBuilder()
-          .setCustomId('claim_ticket')
-          .setLabel('Reclamar Ticket')
-          .setStyle(ButtonStyle.Success)
+        new ButtonBuilder().setCustomId('close_ticket').setLabel('Cerrar Ticket').setStyle(ButtonStyle.Danger),
+        new ButtonBuilder().setCustomId('claim_ticket').setLabel('Reclamar Ticket').setStyle(ButtonStyle.Success)
       );
 
       await canal.send({ content: `${interaction.user}`, embeds: [embedTicket], components: [botones] });
-      await interaction.reply({ content: `✅ Ticket creado: ${canal}`, ephemeral: true });
     } catch (error) {
       console.error('❌ Error creando ticket:', error);
-      await interaction.reply({ content: '❌ Hubo un error al crear el ticket.', ephemeral: true });
+      await interaction.editReply({ content: '❌ Hubo un error al crear el ticket.' });
     }
   }
 
