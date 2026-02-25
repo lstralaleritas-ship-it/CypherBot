@@ -23,6 +23,6 @@ const rest = new REST({ version: '10' }).setToken(process.env.TOKEN);
     );
     console.log('✅ Comando /ticketsmenu registrado en tu servidor.');
   } catch (error) {
-    console.error(error);
+    console.error('❌ Error registrando comandos:', error);
   }
 })();
