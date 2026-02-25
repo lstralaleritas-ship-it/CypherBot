@@ -54,7 +54,8 @@ client.on('interactionCreate', async (interaction) => {
         '❓ **Ayuda** → Para consultas generales, orientación o preguntas sobre la comunidad.\n\n' +
         'Selecciona la opción adecuada y se abrirá un canal privado para atender tu solicitud.'
       )
-      .setColor('#9B59B6') // Morado
+      .setColor('#9B59B6')
+      .setImage('https://copilot.microsoft.com/th/id/BCO.c5c3a150-aae0-4571-93d1-35422be91f29.png')
       .setFooter({ text: 'CypherHub Tickets - Tu soporte confiable' });
 
     const menu = new ActionRowBuilder().addComponents(
@@ -78,7 +79,7 @@ client.on('interactionCreate', async (interaction) => {
       const guild = interaction.guild;
       const nombre = `${tipo}-ticket-${interaction.user.username}`;
 
-      await interaction.deferReply({ ephemeral: true }); // evita timeout
+      await interaction.deferReply({ ephemeral: true });
 
       const categoria = guild.channels.cache.find(c => c.type === 4 && c.name.toLowerCase().includes(tipo));
       if (!categoria) return interaction.editReply({ content: `❌ No encontré la categoría "${tipo}"` });
